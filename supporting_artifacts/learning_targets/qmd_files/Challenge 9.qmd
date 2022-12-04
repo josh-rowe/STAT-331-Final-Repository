@@ -1,0 +1,224 @@
+---
+title: "Lab 9 Rowe"
+author: "Joshua Rowe"
+format: 
+  html:
+    code-fold: true
+    self-contained: true
+editor: visual
+---
+
+## Setup
+
+```{r}
+#| warning: false
+#| message: false
+
+library(tidyverse)
+
+StateNames_A <- read_csv(here::here("supporting_artifacts", "learning_targets", 
+                                    "datasets", "StateNames_A.csv"))
+
+number <- function(x) format(x, scientific = FALSE, big.mark = ",", digits = 4)
+
+DT::datatable(StateNames_A)
+
+```
+
+## Part 1
+
+Question 1.
+
+```{r 1-1}
+#| warning: false
+#| message: false
+
+Allison <- StateNames_A |> 
+  filter(Name == "Allison") |> 
+  mutate(Gender = str_replace_all(Gender, c("F" = "F_at_Birth", 
+                                            "M" = "M_at_Birth"))) |> 
+  group_by(State, Gender) |> 
+  summarize(Count = sum(Count)) |> 
+  pivot_wider(names_from = Gender, values_from = Count, values_fill = 0)
+
+knitr::kable(Allison, format = 'html', 
+             col.names = c("State", 
+                           "Female at Birth",
+                           "Male at Birth"),
+             align = 'c', 
+             caption = "Number of Babies Named \'Allison\' from 1997 to 2014")
+
+## Spiced-Up table using DT:
+DT::datatable(Allison, class = 'cell-border stripe',
+              colnames = c("State", "Female at Birth", 
+                           "Male at Birth"),
+              caption = "Number of Babies Named \'Allison\' from 1997 to 2014",
+              filter = 'top')
+
+```
+
+Question 2.
+
+```{r 1-2}
+
+Allison <- Allison |> 
+  select(State, F_at_Birth)
+
+knitr::kable(Allison, format = 'html', 
+             col.names = c("State", 
+                           "Frequency of Babies"),
+             align = 'c', 
+             caption = 
+               "Number of Female-at-birth Babies Named \'Allison\' from 1997 to 2014")
+
+```
+
+Question 3.
+
+```{r 1-3}
+
+StateNames_Allison <- StateNames_A |> 
+  filter(Name == "Allison") |> 
+  group_by(Year) |> 
+  summarize(Count = sum(Count)) |> 
+  mutate(Year_fact = as.factor(Year))
+
+ggplot(data = StateNames_Allison) + 
+  geom_col(mapping = aes(x = Year_fact, y = Count), fill = "navy") + 
+  labs(x = "Year", y = "", subtitle = "Number of babies named \'Allison\'") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) + 
+  theme(plot.title.position = "plot")
+
+```
+
+## Part 2
+
+Question 4.
+
+```{r 2-1}
+
+Linear_Model <- StateNames_Allison |> 
+  lm(Count ~ Year, data = _)
+
+```
+
+Question 5.
+
+```{r 2-2}
+#| warning: false
+#| message: false
+
+ggplot(data = StateNames_Allison, mapping = aes(x = Year, y = Count)) + 
+  geom_point(color = "darkblue") + 
+  geom_smooth(method = lm, se = FALSE, color = "tomato")
+
+```
+
+Question 6.
+
+```{r 2-3}
+
+print(str_c("Count = ", Linear_Model$coefficients[2], "*Year + ", Linear_Model$coefficients[1]))
+
+```
+
+$$
+\hat{Count} = -101.58(Year) + 209,815.05
+$$ These websites were used for help in creating a nicer-looking equation:
+
+<https://quarto.org/docs/visual-editor/technical.html>
+
+<https://quarto.org/docs/authoring/markdown-basics.html>
+
+Question 7.
+
+```{r 2-4}
+
+StateNames_Allison <- StateNames_Allison |> 
+  mutate(Residuals = Linear_Model$residuals)
+
+ggplot(data = StateNames_Allison, mapping = aes(x = Year, y = Residuals)) + 
+  geom_point()
+
+```
+
+I do not see any pattern in the residuals, which is good! The two relatively large residuals catch my attention, but they are not so large that they would make me assume the model is incorrect.
+
+4.  What do you conclude from this model? Is my name not cool anymore?
+
+While the model does point out a negative trend, I'm not sure that I would conclude that the name is "not cool" anymore! The name "Achilles," I think, is very cool but the website <https://www.everything-birthday.com/name/m/Achilles> suggests, it has had many periods where its popularity "decreased" over time!
+
+## Part 3
+
+Question 8.
+
+```{r 3-1}
+
+
+Allan <- StateNames_A |> 
+  filter(Name == "Allan" | Name == "Alan" | Name == "Allen", 
+         Gender == "M") |> 
+  mutate(Sex = Gender) |> 
+  select(Name, Year, State, Count)
+
+DT::datatable(Allan, class = 'cell-border stripe',
+              colnames = c("Name", 
+                           "Year", 
+                           "State",
+                           "Number of Babies"),
+              caption = "Number of Male-At-Birth Babies With a Variant of the Name \'Allan\'",
+              filter = 'top')
+
+
+
+```
+
+Question 9.
+
+```{r 3-2}
+
+CA_PA <- Allan |> 
+  pivot_wider(names_from = Name, values_from = Count, values_fill = 0) |> 
+  filter(State == "CA"| State == "PA", Year == 2000) |> 
+  select(State, Allen:Allan)
+
+knitr::kable(CA_PA, format = 'html', 
+             col.names = c("State", 
+                           "Allen",
+                           "Alan",
+                           "Allan"),
+             align = 'c', 
+             caption = 
+               "Number of Male-At-Birth Babies With a Variant of the Name \'Allan\' in 2000")
+
+```
+
+Question 10.
+
+```{r 3-3}
+
+num_to_Percent <- function(df, vars) {
+  
+  Total <- rowSums(df[vars])
+  
+  df <- df[vars] / Total * 100
+}
+
+CA_PA_Percents <- num_to_Percent(df = CA_PA, vars = c("Allen", "Alan", "Allan"))
+
+CA_PA_percents <- CA_PA_Percents |> 
+  mutate(State = CA_PA$State)
+
+
+knitr::kable(CA_PA_percents, format = 'html', 
+             digits = 1,
+             col.names = c("Percent Named Allen",
+                           "Percent Named Alan",
+                           "Percent Named Allan",
+                           "State"),
+             align = 'c', 
+             caption = 
+               "Spelling Proportions of Male-At-Birth Babies With a Variant of the Name \'Allan\' in 2000")
+
+
+```

@@ -1,0 +1,88 @@
+---
+title: "Data Import Practice"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+## Setup
+
+```{r}
+#| warning: false
+#| message: false
+
+library(tidyverse)
+
+```
+
+## Step 1: Read in the dataset `ages.csv`.
+
+Question 1.
+
+```{r}
+# Code to read in the ages.csv data goes here! 
+
+ages_csv <- read_csv(here::here("supporting_artifacts", "learning_targets",
+                                "datasets", "Ages_Data", "ages.csv"))
+
+```
+
+## Step 2: Read in the dataset `ages_tab.txt`
+
+Question 2.
+
+```{r}
+# Code to read in the ages_tab.txt data goes here! 
+
+ages_tab <- read_tsv(here::here("supporting_artifacts", "learning_targets",
+                                "datasets", "Ages_Data", "ages_tab.txt"))
+
+
+```
+
+## Step 3: Read in the dataset `ages_mystery.txt`
+
+Question 3.
+
+```{r}
+# Code to read in the ages_mystery.txt data goes here! 
+
+ages_mystery <- read_delim(here::here("supporting_artifacts", "learning_targets", 
+                                      "datasets", "Ages_Data", "ages_mystery.txt"),
+                           delim = "|")
+
+
+```
+
+## Step 4: Read in the dataset `ages.xlsx`
+
+Question 4.
+
+```{r}
+# Code to read in the ages.xlsx data goes here! 
+
+ages_excel <- read_excel(here::here("supporting_artifacts", "learning_targets", 
+                                    "datasets", "Ages_Data", "ages.xlsx"))
+
+```
+
+## Step 5: Both `read.csv` and `read.table` have an optional argument called `stringsAsFactors`. Figure out what this does.
+
+## Step 6: Find a way to use `read_csv()` to read `ages.csv` with the variable "Name" as a factor and "Age" as a character.
+
+Question 5.
+
+```{r}
+# Code to read in the ages.csv with "Name" as a factor and "Age" as a character goes here! 
+
+ages_factors <- read_csv(here::here("supporting_artifacts", "learning_targets", 
+                                    "datasets", "Ages_Data", "ages.csv"), 
+                         col_types = cols( Name = col_factor(),
+                                           Age = col_character()
+                                           ))
+
+
+```
+
+------------------------------------------------------------------------

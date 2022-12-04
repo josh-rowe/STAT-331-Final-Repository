@@ -1,0 +1,152 @@
+---
+title: "Lab 7 Rowe"
+author: "Joshua Rowe"
+format:
+  html:
+    code-fold: true
+    self-contained: true
+editor: visual
+---
+
+## Setup
+
+```{r Setup}
+#| warning: false
+#| message: false
+
+library(tidyverse)
+
+number <- function(x) format(x, scientific = FALSE, big.mark = ",", digits = 4)
+
+BlackFootFish <- read_csv(here::here("supporting_artifacts", "learning_targets", 
+                                     "datasets", "BlackfootFish.csv"))
+
+```
+
+## Part 1
+
+Question 1.
+
+```{r Task1}
+
+na_summary <- BlackFootFish |> 
+  summarize(across(.cols = everything(),
+                .fns = ~sum(is.na(.x))
+                ))
+
+num_nas <- rowSums(na_summary) # this function was found at...
+  # https://www.statology.org/rowsums-function-in-r/. I turned to the internet...
+  # because I could not find any other way to efficiently sum the elements of...
+  # na_summary
+
+  ## See example of graph on Week 8 Thursday slides for a good way to answer this problem
+  ## Use pmap(na_summary, sum) instead of RowSums??
+
+na_summary
+
+```
+
+There are `r number(num_nas)` observations with missing data. The only column with missing data is "weight."
+
+Question 2.
+
+```{r Task2}
+#| warning: false
+#| message: false
+
+na_all <- BlackFootFish |> 
+  arrange(weight) |> 
+  slice_tail(n = num_nas) |> 
+  mutate(trip = as.character(trip))
+
+na_all$trip <- na_all$trip |> 
+  str_replace_all(c("1" = "Trip 1", "2" = "Trip 2"))
+
+ggplot(data = na_all, mapping = aes(x = year)) +
+  geom_histogram(mapping = aes(fill = species), bins = 18) + 
+  facet_wrap(vars(trip, section), scales = "fixed") +
+  labs(y = "", 
+       x = "Year",
+       subtitle = "Number of NAs",
+       trip = "Trip",
+       species = "Species") + 
+  theme(plot.title.position = "plot") + 
+  scale_x_continuous(breaks = 1989:2006, guide = guide_axis(n.dodge = 3)) 
+
+```
+
+## Part 2
+
+Question 3.
+
+```{r Task1-2}
+
+## Tasks 1 and 2
+rescale_01 <- function(vec) {
+  stopifnot(is.numeric(vec), length(vec) > 1)
+  
+  vec_min <- min(vec, na.rm = TRUE)
+  vec_max <- max(vec, na.rm = TRUE)
+  
+  vec <- (vec - vec_min) / 
+    (vec_max - vec_min)
+  
+}
+
+x <- c(1:25, NA)
+
+```
+
+Question 4.
+
+```{r Task3}
+
+## Task 3
+Task3 <- rescale_01(x)
+
+```
+
+Question 5.
+
+```{r Task4}
+#| layout-ncol: 2
+
+## Task 4
+Task4 <- BlackFootFish |> 
+  mutate(length_sc = rescale_01(length), obs = 1:n())
+
+ggplot(data = Task4) + 
+  geom_histogram(mapping = aes(x = length), bins = 30) + 
+  labs(x = "Length", y = "", subtitle = "Number of Observations")
+
+ggplot(data = Task4) + 
+  geom_histogram(mapping = aes(x = length_sc), bins = 30) + 
+  labs(x = "Scaled Length", y = "", subtitle = "Number of Observations")
+
+```
+
+Question 6.
+
+```{r Task5}
+
+## Task 5
+rescale_column <- function(vec, vars) {
+
+  vec <- vec |>
+      mutate(across(
+        .cols = {{vars}},
+        .fns = rescale_01
+        )
+      )
+}
+
+```
+
+Question 7.
+
+```{r Task6}
+
+## Task 6
+Task6 <- rescale_column(BlackFootFish, c(length, weight))
+
+```

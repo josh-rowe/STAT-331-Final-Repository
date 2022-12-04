@@ -1,0 +1,152 @@
+---
+title: "Practice Activity 8 Rowe"
+author: "Joshua Rowe"
+format:
+  html:
+    self-contained: true
+    editor: visual
+---
+
+## Setup
+
+```{r Setup}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(stringr)
+
+xmas <- read.csv("https://www.dropbox.com/s/e584pryn8evm1gz/xmas.csv?dl=1")
+
+```
+
+## Step 1
+
+```{r Step1}
+
+pluralize_gift <- function(gift) {
+  stopifnot(is.character(gift))
+  
+  gift <- gift |> 
+    str_c("s", sep = "") |> 
+    str_replace("ys$", "ies") |> 
+    str_replace("ooses", "eese")
+  
+  return(gift)
+}
+
+```
+
+## Step 2
+
+```{r Step2}
+
+make_phrase <- function(num_word, item, verb, adjective, location) {
+  
+  stopifnot(is.character(num_word) | is.character(item) | is.character(verb) | 
+              is.character(adjective) | is.character(location))
+  
+  item <- if_else(num_word == "one", 
+                  item, 
+                  pluralize_gift(item))
+  
+  num_word <- case_when(num_word == "one" & str_detect(item, "^[aeiou]") ~ "an",
+                        num_word == "one" & !str_detect(item, "^[aeiou]") ~ "a",
+                        TRUE ~ num_word)
+  
+  phrase <- glue::glue("{num_word}", "{adjective}", "{item}", "{verb}", 
+                   "{location}", .sep = " ")
+    
+  phrase <- str_remove_all(phrase, "NA")
+  phrase <- str_squish(phrase)
+    
+  return(phrase)
+  
+}
+
+# Test make_phrase function:
+make_phrase(num_word = "one", 
+            item = "egg", 
+            verb = "a-leaping", 
+            adjective = NA, 
+            location = NA)
+
+```
+
+## Step 3
+
+```{r}
+
+xmas2 <- xmas |> 
+  mutate(day.num = english::english(seq(xmas$Day.in.Words)), 
+         day.num = as.character(day.num),
+    Full.Phrase = pmap_chr(.l = list(num_word = day.num, 
+                                     item = Gift.Item, 
+                                     verb = Verb, 
+                                     adjective = Adjective, 
+                                     location = Location), 
+                           .f = make_phrase)
+  )
+
+```
+
+## Step 4
+
+```{r}
+
+sing_day <- function(dataset, line, phrase_col) {
+
+  # Step 1: Setup the intro line
+  num_word <- english::ordinal(line)
+
+  intro <- glue::glue("On the {num_word} day of Christmas, my true love sent to me")
+
+  # Step 2: Sing the gift phrases
+
+  phrases <- dataset |>
+    pull( {{phrase_col}} )
+  
+  phrases <- phrases[1:line]
+  
+  phrases <- c(phrases, intro)
+  
+  if(line != 1){
+    
+    phrases[1] <- str_c("\nand ", phrases[1], ".")
+    
+    phrases[2:line] <- str_c("\n", phrases[2:line], ",") 
+    
+  } else {
+    
+    phrases[1] <- str_c("\n", phrases[1], ".")
+  }
+  
+  firstline <- line + 1
+  
+  phrases[firstline] <- str_c(phrases[firstline], ":")
+    
+  song <- str_flatten(map_chr(firstline:1, ~ phrases[.x]), collapse = " ")
+  
+  return(song)
+
+}
+```
+
+## A Small Test
+
+```{r}
+
+xmas2 |>
+  sing_day(line = 1, phrase_col = Full.Phrase)
+
+```
+
+## A Larger Test
+
+```{r}
+
+map_chr(1:12, ~ sing_day(xmas2, .x, Full.Phrase)) |>
+  str_c(collapse = "\n\n") |>
+  cat()
+
+```
